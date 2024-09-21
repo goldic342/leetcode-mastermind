@@ -63,27 +63,19 @@ After running the script, you'll have a new directory for the problem with a sol
 
 ```text
 .
-├── 1-Two_Sum/
+├── 1-two_sum/
 │   └── solution.js
-├── 5-Longest_Palindromic_Substring/
+├── 5-longest_palindromic_substring/
 │   └── solution.ts
-├── 2-Add_Two_Numbers/
+├── 2-add_two_numbers/
 │   └── solution.ts
-└── leetcode_setup.py
+└── new.py
 ```
 
 ## Customization
 
 You can easily add support for more programming languages by modifying the `LANGUAGE_CONFIG` dictionary in the script.
 
-In some languages like: `python`, `kotlin`, `scala` and many other you need to make additional request for [asset](https://assets.leetcode.com/monaco-tm/configurations/scala.json)
-I'm lazy to implement this, so if you need support for those languages - contribute :)
+You can also change separators for problem name and number and name by modifying `PROBLEM_NAME_SEPARATOR` and `PROBLEM_ID_NAME_SEPARATOR`
 
-## Troubleshooting
-
-If you encounter any issues:
-
-1. Ensure you have an active internet connection.
-2. Check if the LeetCode problem name or URL is correct.
-
-For persistent issues, please open an issue or PR.
+In some languages like: `python`, `kotlin`, `scala` and many other you need to make additional request for [asset](https://assets.leetcode.com/monaco-tm/configurations/scala.json) I'm lazy to implement this, so if you need support for those languages - contribute :)

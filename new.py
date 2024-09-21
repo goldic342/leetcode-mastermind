@@ -109,7 +109,7 @@ def fetch_problem_data(title_slug: str) -> dict:
 
 
 def create_problem_directory(problem_id: str, title: str) -> str:
-    directory_name = f"{problem_id}{PROBLEM_ID_NAME_SEPARATOR}{title.replace(' ', PROBLEM_NAME_SEPARATOR)}"
+    directory_name = f"{problem_id}{PROBLEM_ID_NAME_SEPARATOR}{title.lower().replace(' ', PROBLEM_NAME_SEPARATOR)}"
     if os.path.exists(directory_name):
         rewrite = input("Problem already exists. Rewrite (y/n)").lower()
 
