@@ -2,14 +2,14 @@ import os
 import shutil
 import re
 import sys
-import json
 import requests
 from datetime import datetime
 from typing import Dict, List
+import argparse
 
 # Configuration
-PROBLEM_NAME_SEPARATOR = "_"
-PROBLEM_ID_NAME_SEPARATOR = "-"
+PROBLEM_NAME_SEPARATOR = "-"
+PROBLEM_ID_NAME_SEPARATOR = "_"
 DEFAULT_LANGUAGE = "js"
 
 
@@ -23,7 +23,7 @@ def create_js_template(
  * @return {{{return_type}}}
  */
 function {function_name}({", ".join(p['name'] for p in params)}) {{
-    
+
 }}
 """
 
@@ -34,7 +34,7 @@ def create_ts_template(
     param_str = ", ".join(f"{p['name']}: {p['type']}" for p in params)
     return f"""
 function {function_name}({param_str}): {return_type} {{
-    
+
 }}
 """
 
@@ -118,7 +118,7 @@ def create_problem_directory(problem_id: str, title: str) -> str:
         elif rewrite == "y":
             shutil.rmtree(directory_name)
         else:
-            print("This isn't a option")
+            print("This isn't an option")
             sys.exit(1)
 
     os.makedirs(directory_name)
@@ -126,100 +126,114 @@ def create_problem_directory(problem_id: str, title: str) -> str:
     return directory_name
 
 
-def create_solution_file(directory: str, language: str, problem_data: dict):
+def create_solution_file(
+    directory: str, language: str, problem_data: dict, is_custom: bool
+):
     if language not in LANGUAGE_CONFIG:
         raise ValueError(f"Language {language} is not supported.")
 
     lang_config = LANGUAGE_CONFIG[language]
     ext = lang_config["extension"]
     comment_symbol = lang_config["comment"]
-    create_template = lang_config["create_template"]
 
     file_name = f"solution{ext}"
     file_path = os.path.join(directory, file_name)
 
-    meta_data = json.loads(problem_data.get("metaData", "{}"))
-    function_name = meta_data.get("name", "solution")
-    params = meta_data.get("params", [])
-    return_type = meta_data.get("return", {}).get("type", lang_config["void"])
-
     with open(file_path, "w", encoding="utf-8") as f:
         # Write problem information
         str_list = [
-            f"{problem_data['title']} ({problem_data['difficulty']})\n",
-            f"https://leetcode.com/problems/{problem_data['titleSlug']}/\n",
-            f"ID: {problem_data['questionFrontendId']}\n",
-            f"Category: {problem_data['categoryTitle']}\n",
+            f"{problem_data.get('title', 'Custom Task')} ({problem_data.get('difficulty', 'N/A')})\n",
             f"Created on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
             "Happy coding!\n\n",
         ]
 
+        if not is_custom:
+            str_list.insert(
+                1, f"https://leetcode.com/problems/{problem_data['titleSlug']}/\n"
+            )
+            str_list.insert(2, f"ID: {problem_data['questionFrontendId']}\n")
+            str_list.insert(3, f"Category: {problem_data['categoryTitle']}\n")
+
         for data_str in str_list:
             f.write(f"{comment_symbol} " + data_str)
 
-        # Write function template
-        f.write(create_template(function_name, params, return_type))
-
-        # Write example test cases
-        f.write(f"\n{comment_symbol} Example test cases:\n")
-        for i, test_case in enumerate(problem_data.get("exampleTestcaseList", []), 1):
-            test_case = test_case.replace("\n", f"\n{comment_symbol} => ")
-            f.write(f"{comment_symbol} Test case {i}: {test_case}\n")
+        if not is_custom:
+            # Write example test cases
+            f.write(f"\n{comment_symbol} Example test cases:\n")
+            for i, test_case in enumerate(
+                problem_data.get("exampleTestcaseList", []), 1
+            ):
+                test_case = test_case.replace("\n", f"\n{comment_symbol} => ")
+                f.write(f"{comment_symbol} Test case {i}: {test_case}\n")
 
     print(f"Solution file created: {file_path}")
 
 
+def create_io_files(directory: str):
+    for file_name in ["input.txt", "output.txt"]:
+        file_path = os.path.join(directory, file_name)
+        with open(file_path, "w") as f:
+            pass  # Create empty file
+        print(f"Created file: {file_path}")
+
+
 def main():
-    if len(sys.argv) < 2:
+    parser = argparse.ArgumentParser(
+        description="LeetCode problem setup script")
+    parser.add_argument("problem", nargs="+",
+                        help="LeetCode problem name or URL")
+    parser.add_argument(
+        "-l", "--language", default=DEFAULT_LANGUAGE, help="Programming language"
+    )
+    parser.add_argument(
+        "-c", "--custom", action="store_true", help="Create a custom task"
+    )
+    parser.add_argument(
+        "-f",
+        "--files",
+        action="store_true",
+        help="Create input.txt and output.txt files",
+    )
+
+    args = parser.parse_args()
+
+    leetcode_url_or_name = " ".join(args.problem)
+    language = args.language.lower()
+    is_custom = args.custom
+    create_io = args.files
+
+    if language not in LANGUAGE_CONFIG:
         print(
-            f'Usage: python script.py "<leetcode_problem_name>" [language] (default: {DEFAULT_LANGUAGE})'
-        )
-        print(
-            f"   or: python script.py <leetcode_url> [language] (default: {DEFAULT_LANGUAGE})"
-        )
+            f'Invalid language, supported: {", ".join(LANGUAGE_CONFIG.keys())}')
         sys.exit(1)
 
-    if len(sys.argv) == 2:
-        leetcode_url_or_name = sys.argv[1]
-        language = DEFAULT_LANGUAGE
-    elif len(sys.argv) == 3:
-        if sys.argv[2].lower() not in LANGUAGE_CONFIG:
-            print(
-                f'Invalid language, supported: {", ".join(LANGUAGE_CONFIG.keys())}')
-            sys.exit(1)
-
-        leetcode_url_or_name = sys.argv[1]
-        language = sys.argv[2].lower()
-    else:
-        leetcode_url_or_name = " ".join(sys.argv[1:-1])
-        language = (
-            sys.argv[-1].lower()
-            if sys.argv[-1].lower() in LANGUAGE_CONFIG
-            else DEFAULT_LANGUAGE
-        )
-
     try:
-        title_slug = parse_title_slug(leetcode_url_or_name)
-        print(f"Problem: {title_slug}")
+        if is_custom:
+            problem_data = {
+                "title": leetcode_url_or_name,
+                "questionFrontendId": "custom",
+            }
+        else:
+            title_slug = parse_title_slug(leetcode_url_or_name)
+            print(f"Problem: {title_slug}")
+            problem_data = fetch_problem_data(title_slug)
 
-        problem_data = fetch_problem_data(title_slug)
         directory = create_problem_directory(
             problem_data["questionFrontendId"], problem_data["title"]
         )
+        create_solution_file(directory, language, problem_data, is_custom)
 
-        create_solution_file(directory, language, problem_data)
+        if create_io:
+            create_io_files(directory)
 
     except KeyboardInterrupt:
         sys.exit(0)
-
     except ValueError as e:
         print(f"Error parsing problem data: {str(e)}")
         sys.exit(1)
-
     except RuntimeError as e:
         print(f"{str(e)} (runtime error)")
         sys.exit(1)
-
     except Exception as e:
         print(f"Unexpected error: {str(e)}")
         print("Please report this issue if it persists.")
