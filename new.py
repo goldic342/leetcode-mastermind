@@ -144,6 +144,7 @@ def create_solution_file(
         str_list = [
             f"{problem_data.get('title', 'Custom Task')} ({problem_data.get('difficulty', 'N/A')})\n",
             f"Created on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
+            f"Source: {'None' if is_custom else 'LeetCode'}\n",
             "Happy coding!\n\n",
         ]
 
@@ -178,10 +179,8 @@ def create_io_files(directory: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="LeetCode problem setup script")
-    parser.add_argument("problem", nargs="+",
-                        help="LeetCode problem name or URL")
+    parser = argparse.ArgumentParser(description="LeetCode problem setup script")
+    parser.add_argument("problem", nargs="+", help="LeetCode problem name or URL")
     parser.add_argument(
         "-l", "--language", default=DEFAULT_LANGUAGE, help="Programming language"
     )
@@ -203,8 +202,7 @@ def main():
     create_io = args.files
 
     if language not in LANGUAGE_CONFIG:
-        print(
-            f'Invalid language, supported: {", ".join(LANGUAGE_CONFIG.keys())}')
+        print(f'Invalid language, supported: {", ".join(LANGUAGE_CONFIG.keys())}')
         sys.exit(1)
 
     try:
